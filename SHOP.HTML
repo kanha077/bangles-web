@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop Collections | Meera Bangles</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Montserrat:wght@400;500&display=swap" rel="stylesheet">
+    <script src="cart.js" defer></script>
+
+    <style>
+        :root { --primary-color: #b08d57; --secondary-color: #4a4a4a; --background-color: #fdfaf6; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Montserrat', sans-serif; background-color: var(--background-color); color: var(--secondary-color); line-height: 1.6; }
+        h1, h2, h3 { font-family: 'Playfair Display', serif; font-weight: 700; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+        .main-header { background-color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); padding: 1rem 0; position: sticky; top: 0; z-index: 100; }
+        .main-header .container { display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 1.8rem; color: var(--primary-color); text-decoration: none; }
+        .main-nav ul { list-style: none; display: flex; gap: 25px; align-items: center; }
+        .main-nav a { text-decoration: none; color: var(--secondary-color); font-weight: 500; font-size: 1rem; }
+        .page-header { padding: 60px 0; text-align: center; }
+        .page-header h1 { font-size: 3rem; }
+        .shop-section { padding: 60px 0; }
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; }
+        .product-link { text-decoration: none; color: inherit; }
+        .product-card { background-color: #fff; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); overflow: hidden; transition: transform 0.4s ease, box-shadow 0.4s ease; cursor: pointer; }
+        .product-card:hover { transform: translateY(-12px); box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+        .product-card img { width: 100%; height: 250px; object-fit: cover; }
+        .product-info { padding: 25px; }
+        .main-footer { background-color: var(--secondary-color); color: #fff; padding: 40px 0; text-align: center; margin-top: 60px; }
+    </style>
+</head>
+<body>
+    <header class="main-header">
+        <div class="container">
+            <a href="index.html" class="logo"> Meera Bangles ✨</a>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="shop.html">Shop</a></li>
+                    <li><a href="about.html">About Us</a></li>
+                    <li><a href="contact.html">Contact</a></li>
+                    <li id="user-status"></li> 
+                    <li><a href="cart.html">🛒 Cart (<span id="cart-count">0</span>)</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+    <main>
+        <div class="page-header"><h1>Our Collections</h1></div>
+        <section class="shop-section">
+            <div class="container">
+                <div class="product-grid" id="product-grid"><p>Loading products...</p></div>
+            </div>
+        </section>
+    </main>
+    <footer class="main-footer">
+        <div class="container"><p>&copy; 2025 Meera bangles . All Rights Reserved.</p></div>
+    </footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const productGrid = document.getElementById('product-grid');
+            try {
+                const response = await fetch('/api/products');
+                const products = await response.json();
+                productGrid.innerHTML = ''; // Clear loading message
+                if (products.length === 0) {
+                    productGrid.innerHTML = '<p>No products have been added yet.</p>';
+                    return;
+                }
+                products.forEach(product => {
+                    const productCardHTML = `
+                        <a href="product-detail.html?id=${product.id}" class="product-link">
+                            <div class="product-card">
+                                <img src="${product.image_urls[0]}" alt="${product.name}">
+                                <div class="product-info">
+                                    <h3>${product.name}</h3>
+                                    <p>rs ${product.price}/-</p>
+                                </div>
+                            </div>
+                        </a>`;
+                    productGrid.insertAdjacentHTML('beforeend', productCardHTML);
+                });
+            } catch (error) {
+                console.error('Failed to load products:', error);
+                productGrid.innerHTML = '<p>Could not load products. Please try again later.</p>';
+            }
+        });
+    </script>
+</body>
+</html>

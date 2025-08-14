@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Meera Bangles</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary-color: #b08d57; --secondary-color: #4a4a4a; --background-color: #fdfaf6; }
+        body { font-family: 'Montserrat', sans-serif; background-color: var(--background-color); color: var(--secondary-color); margin: 0; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        header { background-color: var(--secondary-color); color: white; padding: 1rem 0; }
+        header .container { display: flex; justify-content: space-between; align-items: center; }
+        header h1 { margin: 0; font-family: 'Playfair Display', serif; }
+        .header-actions { display: flex; gap: 15px; }
+        .header-btn, #logout-btn { background: var(--primary-color); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; text-decoration: none; font-size: 14px; }
+        h2 { font-family: 'Playfair Display', serif; margin-top: 40px; border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; word-break: break-word; }
+        th { background-color: #f2f2f2; }
+        .delete-btn { background-color: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; }
+        .form-section { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-top: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 500; }
+        .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 1em; }
+        .submit-btn { background-color: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 1em; }
+        #add-product-message { margin-top: 15px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Admin Dashboard</h1>
+            <div class="header-actions">
+                <a href="index.html" class="header-btn">Go to Homepage</a>
+                <button id="logout-btn">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <section id="add-product">
+            <h2>Add New Product</h2>
+            <div class="form-section">
+                <form id="addProductForm">
+                    <div class="form-group"><label for="name">Product Name</label><input type="text" id="name" required></div>
+                    <div class="form-group"><label for="price">Price (rs)</label><input type="number" id="price" step="0.01" required></div>
+                    <div class="form-group"><label for="imageUrls">Image URLs (one per line)</label><textarea id="imageUrls" rows="5" placeholder="https://.../image1.jpg&#10;https://.../image2.jpg" required></textarea></div>
+                    <div class="form-group"><label for="description">Description</label><textarea id="description" rows="4"></textarea></div>                    <button type="submit" class="submit-btn">Add Product</button>
+                </form>
+                <div id="add-product-message"></div>
+            </div>
+        </section>
+
+        <section id="customer-data">
+            <h2>Customer List</h2>
+            <table id="customers-table">
+                <thead><tr><th>User ID</th><th>Username</th><th>Email</th><th>Actions</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </section>
+
+        <section id="order-data">
+            <h2>Recent Orders</h2>
+            <table id="orders-table">
+                <thead><tr><th>Order ID</th><th>Customer</th><th>Products</th><th>Total Price</th><th>Date</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </section>
+        
+        <section id="message-data">
+            <h2>Contact Form Messages</h2>
+            <table id="messages-table">
+                <thead><tr><th>Msg ID</th><th>Name</th><th>Email</th><th>Message</th><th>Received</th><th>Actions</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </section>
+    </main>
+
+    <script>
+        // --- PAGE SETUP & AUTHENTICATION ---
+        if (localStorage.getItem('isLoggedIn') !== 'true' || localStorage.getItem('username') !== 'owner') {
+            alert('Access Denied. You must be logged in as an admin.');
+            window.location.href = 'login.html';
+        }
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.clear();
+            window.location.href = 'login.html';
+        });
+
+        // --- RUN ALL FETCH FUNCTIONS ON PAGE LOAD ---
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchCustomers();
+            fetchOrders();
+            fetchMessages();
+        });
+
+        // --- 'ADD PRODUCT' FORM LOGIC ---
+        document.getElementById('addProductForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const messageDiv = document.getElementById('add-product-message');
+            const imageUrlsText = document.getElementById('imageUrls').value;
+            const imageUrls = imageUrlsText.split('\n').map(url => url.trim()).filter(url => url);
+            
+            const formData = {
+                name: document.getElementById('name').value,
+                price: document.getElementById('price').value,
+                imageUrls: imageUrls,
+                description: document.getElementById('description').value
+            };
+            const response = await fetch('/api/products', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+            const result = await response.json();
+            messageDiv.textContent = result.message;
+            messageDiv.style.color = response.ok ? 'green' : 'red';
+            if (response.ok) event.target.reset();
+        });
+
+        // --- DATA FETCHING & DISPLAY FUNCTIONS (NOW FILLED IN) ---
+        async function fetchCustomers() {
+            const response = await fetch('/api/users');
+            const users = await response.json();
+            const tableBody = document.querySelector('#customers-table tbody');
+            tableBody.innerHTML = '';
+            users.forEach(user => {
+                tableBody.innerHTML += `<tr id="user-row-${user.id}"><td>${user.id}</td><td>${user.username}</td><td>${user.email}</td><td><button class="delete-btn" data-userid="${user.id}">Delete</button></td></tr>`;
+            });
+            addCustomerDeleteListeners();
+        }
+
+        async function fetchOrders() {
+            const response = await fetch('/api/orders');
+            const orders = await response.json();
+            const tableBody = document.querySelector('#orders-table tbody');
+            tableBody.innerHTML = '';
+            orders.forEach(order => {
+                const products = JSON.parse(order.products).map(p => p.name).join(', ');
+                tableBody.innerHTML += `<tr><td>${order.id}</td><td>${order.username}</td><td>${products}</td><td>rs ${order.total_price.toFixed(2)}/-</td><td>${new Date(order.timestamp).toLocaleString()}</td></tr>`;
+            });
+        }
+
+        async function fetchMessages() {
+            const response = await fetch('/api/messages');
+            const messages = await response.json();
+            const tableBody = document.querySelector('#messages-table tbody');
+            tableBody.innerHTML = '';
+            messages.forEach(msg => {
+                tableBody.innerHTML += `<tr id="message-row-${msg.id}"><td>${msg.id}</td><td>${msg.name}</td><td>${msg.email}</td><td>${msg.message}</td><td>${new Date(msg.timestamp).toLocaleString()}</td><td><button class="delete-btn" data-messageid="${msg.id}">Delete</button></td></tr>`;
+            });
+            addMessageDeleteListeners();
+        }
+
+        function addCustomerDeleteListeners() {
+            document.querySelectorAll('[data-userid]').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const userId = e.target.getAttribute('data-userid');
+                    if (confirm(`Are you sure you want to delete user #${userId}?`)) {
+                        const response = await fetch(`/api/users/${userId}`, { method: 'DELETE' });
+                        if (response.ok) document.getElementById(`user-row-${userId}`).remove();
+                        else alert('Failed to delete user.');
+                    }
+                });
+            });
+        }
+
+        function addMessageDeleteListeners() {
+            document.querySelectorAll('[data-messageid]').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const messageId = e.target.getAttribute('data-messageid');
+                    if (confirm(`Are you sure you want to delete message #${messageId}?`)) {
+                        const response = await fetch(`/api/messages/${messageId}`, { method: 'DELETE' });
+                        if (response.ok) document.getElementById(`message-row-${messageId}`).remove();
+                        else alert('Failed to delete message.');
+                    }
+                });
+            });
+        }
+    </script>
+</body>
+</html>
